@@ -1,0 +1,329 @@
+---
+title: "Gaussian Processes"
+author: "Matthew Edwards"
+date: "28/09/2021"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(mvtnorm)
+```
+
+## Content
+
+The Gaussian Process is a natural extension of the multivariate Gaussian distribution which is a natural extension of the Gaussian distribution. As such the GP is going to be introduced in a series of steps:
+
+1. Gaussian distribution
+2. Bivariate Gaussian distribution
+3. Multivariate Gaussian distribution
+4. Gaussian Process distribution
+
+## One Variable Data
+
+In the following table $X$ is a variable. Each row corresponds to a sample from that variable.
+
+```{r}
+data = tibble(X = rnorm(5))
+data
+```
+
+The **sample mean** and the **sample variance** are important properties of these data.
+
+## Gaussian Distribution
+
+The Gaussian distribution describes the probabilistic properties of a variable $X$. The Gaussian distribution is parameterised by a mean and variance:
+
+- The **mean** $\mu$ is the centre of $X$ values
+- The **variance** $\sigma^2$ is the spread of $X$ values
+
+If we assume a variable $X$ has a Gaussian distribution with mean $\mu$ and variance $\sigma^2$ then $X\sim N(\mu,\sigma^2)$.
+
+## Gaussian Distribution
+
+- $\mu=0$
+- $\sigma^2=1$
+
+```{r}
+ggplot(tibble(x = c(-3, 3)), aes(x)) + 
+  stat_function(fun = dnorm) +
+  labs(x = "X", y = "Probability Density")
+```
+
+## Gaussian Distribution
+
+- $\mu=-1$ (decrease mean)
+- $\sigma^2=1$
+
+```{r}
+ggplot(tibble(x = c(-3, 3)), aes(x)) + 
+  stat_function(fun = dnorm, col = "grey") +
+  stat_function(fun = dnorm, args = list(mean = -1)) +
+  labs(x = "X", y = "Probability Density")
+```
+
+## Gaussian Distribution
+
+- $\mu=0$
+- $\sigma^2=1$
+
+```{r}
+ggplot(tibble(x = c(-3, 3)), aes(x)) + 
+  stat_function(fun = dnorm) +
+  labs(x = "X", y = "Probability Density")
+```
+
+## Gaussian Distribution
+
+- $\mu=0$
+- $\sigma^2=2$ (increase variance)
+
+```{r}
+ggplot(tibble(x = c(-3, 3)), aes(x)) + 
+  stat_function(fun = dnorm, col = "grey") +
+  stat_function(fun = dnorm, args = list(sd = sqrt(2))) +
+  labs(x = "X", y = "Probability Density")
+```
+
+## Two Variable Data
+
+In the following table $X_1$ and $X_2$ are variables. Each row corresponds to a sample from these variables.
+
+```{r}
+data = tibble(X1 = rnorm(5), X2 = rnorm(5))
+data
+```
+
+The **sample correlation** is an important property of these data.
+
+## Bivariate Gaussian Distribution
+
+The bivariate Gaussian distribution describes the probabilistic properties of two variables $X_1$ and $X_2$. The bivariate Gaussian distribution is parameterised by a mean and variance for each variable and a correlation for the pair of variables:
+
+- The **mean** $\mu_t$ is the centre of $X_t$ values
+- The **variance** $\sigma^2_t$ is the spread of $X_t$ values
+- The **correlation** $\rho$ is the association of $X_1$ and $X_2$ values
+
+## Bivariate Gaussian Distribution
+
+The means $\mu_1$ and $\mu_2$ can be collected into a **mean vector**:
+
+$$
+\boldsymbol\mu=
+\begin{bmatrix}
+\mu_1\\
+\mu_2
+\end{bmatrix}
+$$
+
+The variances $\sigma^2_1$ and $\sigma^2_2$ and correlation $\rho$ can be collected into a **variance matrix**:
+
+$$
+\boldsymbol\Sigma=
+\begin{bmatrix}
+\sigma_1^2 & \rho\sigma_1\sigma_2\\
+\rho\sigma_2\sigma_1 & \sigma_2^2
+\end{bmatrix}
+$$
+
+If we assume the variables $X_1$ and $X_2$ have a bivariate Gaussian distribution with mean vector $\boldsymbol\mu$ and variance matrix $\boldsymbol\Sigma$ then $(X_1,X_2)\sim N_2(\boldsymbol\mu,\Sigma)$.
+
+## Bivariate Gaussian Distribution
+
+$$
+\boldsymbol\Sigma=
+\begin{bmatrix}
+1 & 0\\
+0 & 1
+\end{bmatrix}\quad\text{(correlation of zero)}
+$$
+
+```{r warning=FALSE}
+ggplot(tibble(x = rnorm(1000), y = rnorm(1000)), aes(x, y)) +
+ geom_point() + 
+  geom_density_2d_filled(alpha = 0.5) +
+  xlim(-4, 4) +
+  ylim(-4, 4) +
+  labs(x = "X1", y = "X2")
+```
+
+## Bivariate Gaussian Distribution
+
+$$
+\boldsymbol\Sigma=
+\begin{bmatrix}
+1 & 0\\
+0 & 0.5
+\end{bmatrix}\quad\text{(decrease X2 variance)}
+$$
+
+```{r warning=FALSE}
+ggplot(tibble(x = rnorm(1000), y = rnorm(1000, sd = sqrt(0.5))), aes(x, y)) +
+ geom_point() + 
+  geom_density_2d_filled(alpha = 0.5) +
+  xlim(-4, 4) +
+  ylim(-4, 4) +
+  labs(x = "X1", y = "X2")
+```
+
+## Bivariate Gaussian Distribution
+
+$$
+\boldsymbol\Sigma=
+\begin{bmatrix}
+1 & 0.8\\
+0.8 & 1
+\end{bmatrix}\quad\text{(increase correlation)}
+$$
+
+```{r warning=FALSE}
+mat = rmvnorm(1000, sigma = matrix(c(1, 0.8, 0.8, 1), nrow = 2)) 
+colnames(mat) = c("x", "y")
+as_tibble(mat) %>% 
+  ggplot(aes(x, y)) +
+  geom_point() + 
+  geom_density_2d_filled(alpha = 0.5) +
+  xlim(-4, 4) +
+  ylim(-4, 4) +
+  labs(x = "X1", y = "X2")
+```
+
+## Multivariate Gaussian Distribution
+
+The multivariate Gaussian distribution describes the probabilistic properties of $d$ variables $X_1,\dots,X_d$. The multivariate Gaussian distribution is parameterised by a mean and variance for each variable and a correlation for each pair of variables:
+
+- The **mean** $\mu_t$ is the centre of $X_t$ values
+- The **variance** $\sigma^2_t$ is the spread of $X_t$ values
+- The **correlation** $\rho_{st}$ is the association of $X_s$ and $X_t$ values
+
+## Multivariate Gaussian Distribution
+
+The means $\mu_1,\dots,\mu_d$ can be collected into a  **mean vector**:
+
+$$
+\boldsymbol\mu=
+\begin{bmatrix}
+\mu_1\\
+\vdots\\
+\mu_d
+\end{bmatrix}
+$$
+
+The variances $\sigma^2_1,\dots,\sigma^2_d$ and correlations $\rho_{st}$ can be collected into a **variance matrix**:
+
+$$
+\boldsymbol\Sigma_{st}=\rho_{st}\sigma_s\sigma_t
+$$
+
+If we assume the variables $X_1,\dots,X_d$ have a multivariate Gaussian distribution with mean vector $\boldsymbol\mu$ and variance matrix $\boldsymbol\Sigma$ then $(X_1,\dots,X_d)\sim N_d(\boldsymbol\mu,\boldsymbol\Sigma)$.
+
+## Alternative Plot
+
+Plotting samples from a multivariate ($d>2$) Gaussian distribution is impossible. This would require the screen to be three dimensional!
+
+However, they can be plotted with an **index plot**.
+
+## Index Plot ($d=2$)
+
+$\rho_{st}=\exp(|s-t|^2/200)\quad\text{(unit variance)}$
+
+```{r}
+make_sigma = function(d, l=1) {
+ sigma = matrix(rep(0, d * d), nrow = d)
+ for(i in seq_len(d)) {
+   for(j in seq_len(d)) {
+     sigma[i, j] = exp(-abs(i-j)^2/(2*l^2))
+   }
+ }
+ return(sigma)
+}
+```
+
+```{r warning=FALSE}
+n = 10
+d = 2
+mat = rmvnorm(n, sigma = make_sigma(d, 10)) 
+colnames(mat) = as.character(seq_len(d))
+as_tibble(mat) %>% 
+  mutate(sample = factor(seq_len(n))) %>% 
+  pivot_longer(cols = as.character(seq_len(d)), names_to = "index") %>% 
+  mutate(index = as.integer(index)) %>% 
+  ggplot(aes(index, value, col = sample)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Index", y = "Value", col = "Sample") +
+  xlim(1, 5) +
+  ylim(-3, 3)
+```
+
+## Index Plot ($d=5$)
+
+$\rho_{st}=\exp(|s-t|^2/200)\quad\text{(unit variance)}$
+
+```{r warning=FALSE}
+n = 10
+d = 5
+mat = rmvnorm(n, sigma = make_sigma(d, 10)) 
+colnames(mat) = as.character(seq_len(d))
+as_tibble(mat) %>% 
+  mutate(sample = factor(seq_len(n))) %>% 
+  pivot_longer(cols = as.character(seq_len(d)), names_to = "index") %>% 
+  mutate(index = as.integer(index)) %>% 
+  ggplot(aes(index, value, col = sample)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Index", y = "Value", col = "Sample") +
+  xlim(1, 5) +
+  ylim(-3, 3)
+```
+
+## Index Plot ($d=50$)
+
+$\rho_{st}=\exp(|s-t|^2/200)\quad\text{(unit variance)}$
+
+```{r warning=FALSE}
+n = 10
+d = 50
+mat = rmvnorm(n, sigma = make_sigma(d, 10)) 
+colnames(mat) = as.character(seq_len(d))
+as_tibble(mat) %>% 
+  mutate(sample = factor(seq_len(n))) %>% 
+  pivot_longer(cols = as.character(seq_len(d)), names_to = "index") %>% 
+  mutate(index = as.integer(index)) %>% 
+  ggplot(aes(index, value, col = sample)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Index", y = "Value", col = "Sample") +
+  xlim(1, 50) +
+  ylim(-3, 3)
+```
+
+## Gaussian Process
+
+Notice that samples from the $50$-dimensional multivariate Gaussian distribution are discrete functions over the index $t$ from 1 to $d$. 
+
+Is it possible to sample continuous functions over an index $t\in\mathbb{R}$. This requires a **Gaussian Process** distribution. 
+
+## Gaussian Process
+
+1. Multivariate Gaussian distribution requires a:
+    + mean $\mu_t$ for each $t$ from 1 to $d$. 
+    + variance $\sigma^2_t$ for each $t$ from 1 to $d$
+    + correlation $\rho_{st}$ for each $s,t$ from 1 to $d$
+2. Gaussian Process distribution requires a:
+    + mean $\mu(t)$ for each $t\in\mathbb{R}$
+    + variance $\sigma^2(t)$ for each $t\in\mathbb{R}$
+    + correlation $\rho(s,t)$ for each $s,t\in\mathbb{R}$
+  
+## Gaussian Process  
+
+- $\mu(t)$ is the mean function
+- $\sigma^2(t)$ is the variance function
+- $\rho(s,t)$ is the correlation function
+
+If we assume a function $X(t)$ has Gaussian Process distribution with mean function $\mu(t)$, variance function $\sigma^2(t)$ and correlation function $\rho(s,t)$ then $X(t)\sim N_d(\mu(t),\sigma(s)\sigma(t)\rho(s,t))$.
+
+[Gaussian Process Playground](https://durrande.shinyapps.io/gp_playground/)
+
+*In the index plots we used a squared exponential covariance function with $\sigma^2(t)=1$ and $\theta=0.02$.*
