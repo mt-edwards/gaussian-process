@@ -13,7 +13,7 @@ library(mvtnorm)
 
 ## Content
 
-The Gaussian Process is a natural extension of the multivariate Gaussian distribution which is a natural extension of the Gaussian distribution. As such the GP is going to be introduced in a series of steps:
+The Gaussian Process is a natural extension of the multivariate Gaussian distribution which is a natural extension of the Gaussian distribution. As such the Gaussian process is going to be introduced in a series of steps:
 
 1. Gaussian distribution
 2. Bivariate Gaussian distribution
